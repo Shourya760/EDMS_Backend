@@ -1,16 +1,25 @@
-import express from "express";
 import dotenv from "dotenv";
+dotenv.config();
+import cors from "cors"
+
+
+import express from "express";
 import connectDB from "./config/db.js";
 import registerRoutes from "./src/routes/index.js";
 
-dotenv.config();
+
 
 const app = express();
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
 connectDB();
 
 app.get("/", (req, res) => {
-  res.send("EDMS djhfefg erg erg erge rtAPI Running");
+  res.send("EDMS API Running");
 });
 
 registerRoutes(app);

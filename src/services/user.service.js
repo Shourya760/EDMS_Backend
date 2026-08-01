@@ -9,15 +9,27 @@ class UserService {
     return await User.findOne({ email });
   }
 
-  async getAllUsers(){
+  async getAllUsers() {
     return await User.find();
   }
 
   async deleteUserByEmail(email) {
-  return await User.findOneAndDelete({ email });
+    return await User.findOneAndDelete({ email });
+  }
 
-  
+  async findByEmailAndPassword(email, password) {
+    return await User.findOne({ email, password })
+  }
+
+  async findUserById(userId) {
+    return await User.findById(userId);
+  }
+
+  async findByPhone(phone) {
+    return await User.findOne({ phone })
+  }
 }
-}
+
+
 
 export default new UserService(); 
