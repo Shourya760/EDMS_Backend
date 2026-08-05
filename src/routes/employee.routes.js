@@ -26,11 +26,24 @@ router.post("/employee", authenticate,
       name: "documentTypes",
       maxCount: 20
     }
-  ]), createEmployee)
+  ]), createEmployee);
 router.get("/getemployee", authenticate, getAllEmployee)
 router.get("/getoneemployee", authenticate, getOneEmployee)
 router.delete("/deleteemployee", authenticate, deleteEmployee)
-router.patch("/updateemployee",updateEmployee)
+router.patch("/updateemployee", authenticate, upload.fields([
+  {
+    name: "profile_image",
+    maxCount: 1
+  },
+  {
+    name: "documents",
+    maxCount: 20
+  },
+  {
+    name: "documentTypes",
+    maxCount: 20
+  }
+]), updateEmployee);
 
 
 export default router;

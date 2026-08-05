@@ -8,6 +8,13 @@ class DocumentsService {
     async getDocumentsByEmployeeId(id) {
         return await Document.find({ employee_id: id });
     }
+    async updateDocumnetsByEmployeeId(id) {
+        return await Document.findByIdAndUpdate(
+            id,
+            data,
+            { new: true }
+        );
+    }
 }
 
 export default new DocumentsService();

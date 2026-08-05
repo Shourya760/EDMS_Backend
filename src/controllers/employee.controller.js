@@ -4,9 +4,6 @@ import { uploadToCloudinary } from "../utills/uploadToCloudinary.js";
 import documentService from "../services/document.service.js";
 
 
-
-
-
 export const createEmployee = async (req, res) => {
     try {
         const { name,
@@ -22,13 +19,14 @@ export const createEmployee = async (req, res) => {
         console.log("FILE TYPE OF REQ.FILE: ", req.files);
         console.log("BODY :  ", documentTypes);
 
-        // checking is all the field are entered
+        // checking if all the field are entered
         if (!name || !email || !phone || !designation || !address || !joining_date) {
             return res.status(400).json({
                 success: false,
                 message: "All fields are required",
             });
         }
+
         // check for wrong phone number
         const check_phone_error = isValidIndianPhone(phone);
         if (!check_phone_error) {
@@ -37,6 +35,7 @@ export const createEmployee = async (req, res) => {
                 message: "Invalid phone number ",
             });
         }
+
         // check is email already exists
         const email_exist_check = await EmployeeService.findbyemail(email);
         if (email_exist_check) {
@@ -45,8 +44,6 @@ export const createEmployee = async (req, res) => {
                 message: "Email already Exists in DB"
             });
         }
-
-
 
         // profile Photo upload
         let documentUrl = "";
@@ -65,12 +62,13 @@ export const createEmployee = async (req, res) => {
             joining_date,
             profile_image: documentUrl
         });
-        // Store Employee Documents:
-        console.log("debuggggggg me")
 
+
+        // Store Employee Documents:
         const parsedDocumentTypes = documentTypes
             ? JSON.parse(documentTypes)
             : [];
+
         const uploadedDocuments = req.files.documents || [];
         const employeeDocuments = await Promise.all(
 
@@ -88,15 +86,13 @@ export const createEmployee = async (req, res) => {
                     document_url: uploadedFile.url
                 };
             })
-
         );
         // creating documents in DB
         const document = await DocumentsService.createDocument(
             employeeDocuments
         )
 
-
-
+        // All done
         return res.status(200).json({
             success: true,
             message: "Employeee registered successfully",
@@ -236,26 +232,42 @@ export const deleteEmployee = async (req, res) => {
 
 export const updateEmployee = async (req, res) => {
     try {
-        const { employee_id, data } = req.body;
-        console.log(employee_id)
-        console.log(data.name)
+        const { employee_id } = req.body;
+        const data = JSON.parse(req.body.data);
 
-        //check for email id 
         if (!employee_id) {
             return res.status(400).json({
                 success: false,
-                message: "Id not found"
-            })
+                message: "Employee ID not found.",
+            });
         }
 
-        //update
+        // Validate phone number (only if provided)
+        if (data.phone) {
+            const check_phone_error = isValidIndianPhone(data.phone);
+
+            if (!check_phone_error) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid phone number.",
+                });
+            }
+        }
+
+        // Upload new profile image if user selected one
+        if (req.files?.profile_image?.length > 0) {
+            const uploadedFile = await uploadToCloudinary(
+                req.files.profile_image[0].buffer
+            );
+            data.profile_image = uploadedFile.url;
+        }
+
+        // Update employee
         const updatedData = await EmployeeService.updateEmployee(
             employee_id,
-            data,
-            { new: true }
-        )
+            data
+        );
 
-        // check if updated 
         if (!updatedData) {
             return res.status(404).json({
                 success: false,
@@ -265,12 +277,16 @@ export const updateEmployee = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "Employee updateted Successfully."
-        })
+            message: "Employee updated successfully.",
+            employee: updatedData,
+        });
+
     } catch (error) {
+        console.log("Update Employee Error:", error);
+
         return res.status(500).json({
             success: false,
-            message: "Error while updating Employee => " + error
-        })
+            message: error.message,
+        });
     }
-}
+};
