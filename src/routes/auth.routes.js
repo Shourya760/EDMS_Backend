@@ -21,7 +21,6 @@ const router = express.Router();
 
 // Unprotected Routes
 router.post("/register", upload.single("profile_image"), registerUser);
-
 router.post("/login", loginUser)
 
 // Protected Routes
@@ -30,6 +29,8 @@ router.delete("/deletebyemail", authenticate, deleteUserByEmail)
 router.get("/getUserById", authenticate, getUserById)
 router.get("/getuser", authenticate, getUser)
 router.get("/profile", authenticate, getCurrentUserProfile)
+
+
 
 
 

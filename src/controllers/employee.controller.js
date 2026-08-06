@@ -83,14 +83,16 @@ export const createEmployee = async (req, res) => {
                     employee_id: employee._id,
                     document_type: parsedDocumentTypes[index].type,
                     document_name: fileName,
-                    document_url: uploadedFile.url
+                    document_url: uploadedFile.url,
                 };
             })
         );
+        console.log(employeeDocuments)
         // creating documents in DB
         const document = await DocumentsService.createDocument(
             employeeDocuments
         )
+
 
         // All done
         return res.status(200).json({
@@ -232,7 +234,7 @@ export const deleteEmployee = async (req, res) => {
 
 export const updateEmployee = async (req, res) => {
     try {
-        const { employee_id } = req.body;
+        const { employee_id, documentTypes } = req.body;
         const data = JSON.parse(req.body.data);
 
         if (!employee_id) {
@@ -242,43 +244,65 @@ export const updateEmployee = async (req, res) => {
             });
         }
 
-        // Validate phone number (only if provided)
-        if (data.phone) {
-            const check_phone_error = isValidIndianPhone(data.phone);
-
-            if (!check_phone_error) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid phone number.",
-                });
-            }
+        // Validate phone
+        if (data.phone && !isValidIndianPhone(data.phone)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid phone number.",
+            });
         }
 
-        // Upload new profile image if user selected one
+        // Upload profile image
         if (req.files?.profile_image?.length > 0) {
-            const uploadedFile = await uploadToCloudinary(
+            const uploadedImage = await uploadToCloudinary(
                 req.files.profile_image[0].buffer
             );
-            data.profile_image = uploadedFile.url;
+
+            data.profile_image = uploadedImage.url;
         }
 
         // Update employee
-        const updatedData = await EmployeeService.updateEmployee(
+        const updatedEmployee = await EmployeeService.updateEmployee(
             employee_id,
             data
         );
 
-        if (!updatedData) {
+        if (!updatedEmployee) {
             return res.status(404).json({
                 success: false,
                 message: "Employee not found.",
             });
         }
 
+        // ---------------- Documents ----------------
+
+        if (documentTypes) {
+            const parsedDocumentTypes = JSON.parse(documentTypes);
+            const uploadedDocuments = req.files?.documents || [];
+
+            const employeeDocuments = await Promise.all(
+                uploadedDocuments.map(async (file, index) => {
+
+                    const uploadedFile = await uploadToCloudinary(file.buffer);
+
+                    return {
+                        employee_id,
+                        document_type: parsedDocumentTypes[index].type,
+                        document_name: `${parsedDocumentTypes[index].type}_${updatedEmployee.email}`.replace(/\s+/g, "_"),
+                        document_url: uploadedFile.url,
+                    };
+                })
+            );
+
+            if (employeeDocuments.length > 0) {
+                await DocumentsService.createDocument(employeeDocuments);
+            }
+        }
+
         return res.status(200).json({
             success: true,
             message: "Employee updated successfully.",
-            employee: updatedData,
+            employee: updatedEmployee,
         });
 
     } catch (error) {
