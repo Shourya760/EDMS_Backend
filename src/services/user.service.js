@@ -28,6 +28,13 @@ class UserService {
   async findByPhone(phone) {
     return await User.findOne({ phone })
   }
+  async updateById(id, data) {
+    return await User.findByIdAndUpdate(
+      id,
+      data,
+      { new: true }
+    )
+  }
 }
 
 

@@ -93,6 +93,7 @@ export const createEmployee = async (req, res) => {
             employeeDocuments
         )
 
+        // Call Email service to Send Welcome Email to this User.
 
         // All done
         return res.status(200).json({

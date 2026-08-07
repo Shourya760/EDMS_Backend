@@ -9,7 +9,8 @@ import {
   loginUser,
   getUser,
   getUserById,
-  getCurrentUserProfile
+  getCurrentUserProfile,
+  UpdateUser
 } from "../controllers/auth.controller.js";
 
 
@@ -30,7 +31,7 @@ router.get("/getUserById", authenticate, getUserById)
 router.get("/getuser", authenticate, getUser)
 router.get("/profile", authenticate, getCurrentUserProfile)
 
-
+router.patch("/updateUser", upload.single("profile_image"), UpdateUser)
 
 
 

@@ -6,6 +6,8 @@ import { comparePassword, encryptPassword } from "../utills/password.util.js";
 import { generateToken } from "../utills/jwt.js";
 import { response } from "express";
 
+
+
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
@@ -316,5 +318,43 @@ export const getCurrentUserProfile = async (req, res) => {
       message: "Error in getting Profile" + error
     })
 
+  }
+}
+
+export const UpdateUser = async (req, res) => {
+  try {
+    const id = req.body.id;
+    const data = JSON.parse(req.body.data);
+
+    // check if phone number is valid
+    if (data.phone) {
+      const check_phone_error = isValidIndianPhone(data.phone)
+      if (!check_phone_error) {
+        return res.status(409).json({
+          success: false,
+          message: "Invalid phone number 😑",
+        });
+      }
+    };
+    // uploading  profile to cloude
+    if (req.file) {
+      const uploadedFile = await uploadToCloudinary(req.file.buffer);
+      data.profile_image = uploadedFile.url;
+    }
+
+    const response = await userService.updateById(id, data);
+
+
+    return res.status(200).json({
+      success: true,
+      message: "All Done Bro",
+      data: response,
+    })
+
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: "Error While Updating User " + Error
+    })
   }
 }
