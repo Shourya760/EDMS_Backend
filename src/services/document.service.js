@@ -5,6 +5,9 @@ class DocumentsService {
     async createDocument(data) {
         return await Document.create(data);
     }
+    async getAllDocuments() {
+        return await Document.find();
+    }
     async getDocumentsByEmployeeId(id) {
         return await Document.find({ employee_id: id });
     }

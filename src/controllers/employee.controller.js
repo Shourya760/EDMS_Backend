@@ -1,7 +1,9 @@
 import { isValidIndianPhone } from "../utills/validations.js";
 import { DepartmentService, DocumentsService, EmployeeService, ManagerService } from "../services/index.js";
 import { uploadToCloudinary } from "../utills/uploadToCloudinary.js";
-import documentService from "../services/document.service.js";
+
+
+import transporter from "../utills/sendEmail.js";
 
 
 export const createEmployee = async (req, res) => {
@@ -94,6 +96,28 @@ export const createEmployee = async (req, res) => {
         )
 
         // Call Email service to Send Welcome Email to this User.
+
+        if (document && employee) {
+            try {
+                console.log("Inside Email services")
+                await transporter.sendMail({
+                    from: process.env.EMAIL,
+                    to: employee.email,
+                    subject: "Welcome to the Company 🎉",
+                    text: `Hello ${employee.name},
+
+                        Welcome to the company!
+
+                        We're happy to have you onboard.
+
+                        Regards,
+                        HR Team`,
+                });
+            } catch (error) {
+                console.log("Error in Email =>", error)
+            }
+
+        }
 
         // All done
         return res.status(200).json({

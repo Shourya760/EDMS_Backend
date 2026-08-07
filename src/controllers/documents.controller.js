@@ -3,51 +3,28 @@ import mongoose from "mongoose";
 import { DocumentsService } from "../services/index.js";
 import cloudinary from "../../config/cloudinary.js";
 import { getPublicIdFromUrl } from "../utills/deletingFromCloud.js";
-import { uploadToCloudinary } from "../utills/uploadToCloudinary.js";
 
 
-// export const addDocument = async (req, res) => {
-//     try {
-//         const { employee_id, document_type } = req.body;
 
-//         if (!employee_id || !document_type) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "Employee ID and document type are required",
-//             });
-//         }
+export const getalldocuments = async (req, res) => {
+    try {
+        console.log("Welcome ")
+        const document = await DocumentsService.getAllDocuments();
 
-//         if (!req.files?.document?.length) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "Please upload a document",
-//             });
-//         }
+        return res.status(201).json({
+            success: true,
+            message: "Got all documents",
+            length: document.length,
+            data: document
+        });
 
-//         const file = req.files.document[0];
-
-//         const uploadedFile = await uploadToCloudinary(file.buffer);
-
-//         const document = await DocumentsService.createDocument({
-//             employee_id,
-//             document_type,
-//             document_name: `${document_type}_${employee_id}`.replace(/\s+/g, "_"),
-//             document_url: uploadedFile.url,
-//         });
-
-//         return res.status(201).json({
-//             success: true,
-//             message: "Document added successfully",
-//             data: document,
-//         });
-
-//     } catch (error) {
-//         return res.status(500).json({
-//             success: false,
-//             message: error.message,
-//         });
-//     }
-// }
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Error in getting documnets" + error
+        });
+    }
+}
 
 
 export const deleteDocument = async (req, res) => {
