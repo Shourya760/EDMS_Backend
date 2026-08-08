@@ -14,10 +14,10 @@ class DepartmentService {
         return await Department.findByIdAndUpdate(
             id,
             data,
-            { new: true }
+            { returnDocument: "after" }
         );
     }
-    
+
 
 }
 

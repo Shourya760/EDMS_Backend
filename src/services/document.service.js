@@ -22,7 +22,7 @@ class DocumentsService {
         return await Document.findByIdAndUpdate(
             id,
             data,
-            { new: true }
+            { returnDocument: "after" }
         );
     }
 

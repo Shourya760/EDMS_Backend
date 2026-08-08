@@ -32,8 +32,13 @@ class UserService {
     return await User.findByIdAndUpdate(
       id,
       data,
-      { new: true }
+      { returnDocument: "after" }
     )
+  }
+  async getUserByToken(token) {
+    return await User.findOne({
+      forgot_password_token: token
+    })
   }
 }
 

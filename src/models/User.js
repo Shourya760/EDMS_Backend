@@ -24,6 +24,14 @@ const userSchema = new mongoose.Schema(
       required: true,
       match: [/^\d{10}$/, "Phone number must be exactly 10 digits"],
     },
+    forgot_password_token: {
+      type: String,
+      required: false
+    },
+    token_expiry: {
+      type: Date,
+      required: false
+    }
   },
   {
     timestamps: true,

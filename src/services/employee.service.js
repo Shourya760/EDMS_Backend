@@ -26,7 +26,7 @@ class EmployeeService {
         return await Employee.findByIdAndUpdate(
             id,
             data,
-            { new: true }
+            { returnDocument: "after" }
         );
     }
 

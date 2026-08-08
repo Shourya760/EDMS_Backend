@@ -1,10 +1,13 @@
 import { UserService } from "../services/index.js";
-import userService from "../services/user.service.js";
 import { isValidIndianPhone } from "../utills/validations.js";
 import { uploadToCloudinary } from "../utills/uploadToCloudinary.js";
 import { comparePassword, encryptPassword } from "../utills/password.util.js";
-import { generateToken } from "../utills/jwt.js";
+import { generatePasswordToken, generateToken } from "../utills/jwt.js";
 import { response } from "express";
+import "../../config/env.js"
+import transporter from "../utills/sendEmail.js";
+import userService from "../services/user.service.js";
+
 
 
 
@@ -355,6 +358,173 @@ export const UpdateUser = async (req, res) => {
     return res.status(400).json({
       success: false,
       message: "Error While Updating User " + Error
+    })
+  }
+}
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email not found"
+      })
+    }
+
+    const user = await UserService.findByEmail(email)
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Email doesn't Exist"
+      })
+    }
+
+    const token = generatePasswordToken();
+
+    // Expires after 24 hours
+    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    const set_expire_and_token = await UserService.updateById(user._id, {
+      token_expiry: tokenExpires,
+      forgot_password_token: token
+    })
+    if (set_expire_and_token) {
+      try {
+        console.log("Inside Email services")
+        await transporter.sendMail({
+          from: process.env.EMAIL,
+          to: user.email,
+          subject: "Forgot Password Email",
+          text: `Dear ${user.name},
+
+                  A request has been received to reset the password for your account.
+
+                  To reset your password, please click the link below:
+
+                  ${process.env.WEBSITE_BASE}/forgot-password?token=${token}
+
+                  If you did not request this password reset, please ignore this email. Your account will remain secure.
+
+                  Thank you,
+
+                  HR Management System
+                  Support Team`
+        });
+      } catch (error) {
+        console.log("Error in Email =>", error)
+      }
+
+    }
+
+    return res.status(200).json({
+      success: false,
+      message: "Reset Link Shared on Your Email",
+    })
+
+
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: "Error in Forgoting Password" + error
+    })
+  }
+}
+
+export const updatePassword = async (req, res) => {
+  try {
+
+    const { confirmPassword, password, token } = req.body
+    console.log("Debugg1111")
+    /**
+     * 1. FEtch user with this token
+     * 2. If any user exists, then check if the token is expiered
+     * 3. If no user exsits then return error
+     * 4. If user exists and token is not expired, then update password
+     */
+    if (!confirmPassword || !password || !token) {
+      return res.status(400).json({
+        success: false,
+        message: "All Fiels required"
+      })
+    }
+
+
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Password do not match "
+      })
+    }
+
+    const get_user = await UserService.getUserByToken(token)
+
+    if (!get_user) {
+      return res.status(400).json({
+        success: false,
+        message: "Error reseting Password"
+      })
+    }
+
+    const is_token_expired = new Date(get_user.token_expiry) < new Date();
+
+
+    if (!is_token_expired) {
+
+      console.log("Debug 12")
+      const hashedPassword = await encryptPassword(password);
+
+      console.log("Debug 13")
+      const update_password = await UserService.updateById(
+        get_user._id,
+        {
+          password: hashedPassword,
+          token_expiry: null,
+          forgot_password_token: null
+        }
+      )
+
+      console.log("Debug 14: ", update_password)
+      try {
+        console.log("Inside Email services")
+        await transporter.sendMail({
+          from: process.env.EMAIL,
+          to: get_user.email,
+          subject: "Password updated!",
+          text: `Hello ${get_user.name},
+
+                        Password Updated.
+
+                        LOGIN HERE: ${process.env.WEBSITE_BASE}
+
+                        Regards,
+                        HR Team`,
+        });
+      } catch (error) {
+        console.log("Error in Email =>", error)
+      }
+
+      if (update_password) {
+        return res.status(200).json({
+          success: true,
+          message: "Password Updated"
+        })
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Token Expired "
+      })
+    }
+
+
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: "Error reseting password: " + error
     })
   }
 }

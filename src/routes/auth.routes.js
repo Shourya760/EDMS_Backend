@@ -10,7 +10,9 @@ import {
   getUser,
   getUserById,
   getCurrentUserProfile,
-  UpdateUser
+  UpdateUser,
+  forgotPassword,
+  updatePassword
 } from "../controllers/auth.controller.js";
 
 
@@ -22,7 +24,9 @@ const router = express.Router();
 
 // Unprotected Routes
 router.post("/register", upload.single("profile_image"), registerUser);
-router.post("/login", loginUser)
+router.post("/login", loginUser);
+router.post("/forgotPassword", forgotPassword)
+router.patch("/updatePassword", updatePassword)
 
 // Protected Routes
 router.get("/info", authenticate, getAllUsers)
@@ -32,7 +36,6 @@ router.get("/getuser", authenticate, getUser)
 router.get("/profile", authenticate, getCurrentUserProfile)
 
 router.patch("/updateUser", upload.single("profile_image"), UpdateUser)
-
 
 
 
