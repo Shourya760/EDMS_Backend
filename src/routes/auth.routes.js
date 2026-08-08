@@ -29,7 +29,7 @@ router.post("/forgotPassword", forgotPassword)
 router.patch("/updatePassword", updatePassword)
 
 // Protected Routes
-router.get("/info", authenticate, getAllUsers)
+router.get("/getAllUsers", authenticate, getAllUsers)
 router.delete("/deletebyemail", authenticate, deleteUserByEmail)
 router.get("/getUserById", authenticate, getUserById)
 router.get("/getuser", authenticate, getUser)

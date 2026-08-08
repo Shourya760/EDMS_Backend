@@ -24,6 +24,15 @@ const userSchema = new mongoose.Schema(
       required: true,
       match: [/^\d{10}$/, "Phone number must be exactly 10 digits"],
     },
+    address: {
+      type: String,
+      required: true,
+    },
+    status: {
+      type: Boolean,
+      required: false,
+      default: 0
+    },
     forgot_password_token: {
       type: String,
       required: false

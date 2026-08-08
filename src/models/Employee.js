@@ -46,7 +46,7 @@ const employeeSchema = new mongoose.Schema(
 
         is_deleted: {
             type: Boolean,
-            default: false
+            default: 0
         },
         delete_date: {
             type: Date,

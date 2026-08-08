@@ -13,11 +13,12 @@ import userService from "../services/user.service.js";
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, confirmpassword, phone, address } = req.body;
 
+    console.log("Data: ", req.body)
     console.log("FILE TYPE OF REQ.FILE: ", req.file)
 
-    if (!name || !email || !password || !phone) {
+    if (!name || !email || !password || !confirmpassword || !phone || !address) {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
@@ -49,27 +50,65 @@ export const registerUser = async (req, res) => {
       documentUrl = uploadedFile.url
     }
 
-    const hashedPassword = await encryptPassword(password);
+
+    let hashedPassword;
+
+    if (password === confirmpassword) {
+      hashedPassword = await encryptPassword(password);
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Password not matching.",
+      });
+    }
+
+
     const user = await UserService.createUser({
       name,
       email,
       password: hashedPassword,
       phone,
+      address,
       profile_image: documentUrl
     });
 
-    return res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      data: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-    });
+
+    if (user) {
+      try {
+        await transporter.sendMail({
+          from: process.env.EMAIL,
+          to: user.email,
+          subject: "Welcome to the Company 🎉",
+          text: `Hello ${user.name},
+          
+          Welcome to the company! We're delighted to have you onboard as a Super Admin. 
+          We look forward to having you as a part of our team.
+          You can access the platform using the link below: 
+          Login: ${process.env.WEBSITE_BASE} If you have any questions or need assistance, 
+          please don't hesitate to reach out. 
+
+          Regards, 
+          HR Team`
+        });
+      } catch (error) {
+        console.log("Error in Email =>", error)
+      }
+      return res.status(201).json({
+        success: true,
+        message: "User registered successfully",
+        data: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+        },
+      });
+    }
+
+
+
+
   } catch (error) {
     console.error(error);
-
     return res.status(500).json({
       success: false,
       message: "Internal server error in register user api" + error,
@@ -528,3 +567,6 @@ export const updatePassword = async (req, res) => {
     })
   }
 }
+
+
+
