@@ -84,7 +84,10 @@ export const registerUser = async (req, res) => {
           Welcome to the company! We're delighted to have you onboard as a Super Admin. 
           We look forward to having you as a part of our team.
           You can access the platform using the link below: 
-          Login: ${process.env.WEBSITE_BASE} If you have any questions or need assistance, 
+
+          Login: ${process.env.WEBSITE_BASE}
+
+          If you have any questions or need assistance, 
           please don't hesitate to reach out. 
 
           Regards, 
@@ -378,6 +381,7 @@ export const UpdateUser = async (req, res) => {
         });
       }
     };
+
     // uploading  profile to cloude
     if (req.file) {
       const uploadedFile = await uploadToCloudinary(req.file.buffer);
@@ -396,7 +400,7 @@ export const UpdateUser = async (req, res) => {
   } catch (error) {
     return res.status(400).json({
       success: false,
-      message: "Error While Updating User " + Error
+      message: "Error While Updating User =>" + error
     })
   }
 }

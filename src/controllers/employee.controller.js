@@ -139,23 +139,48 @@ export const createEmployee = async (req, res) => {
 }
 
 export const getAllEmployee = async (req, res) => {
-    try {
-        const data = await EmployeeService.getallemployee()
-        console.log("All the Employees are here.......")
-        return res.status(200).json({
-            success: true,
-            message: "Got all employee ",
-            data: data,
-            total_employee: data.length,
+    const { recentThree } = req.query;
 
-        })
+    console.log("Debug 11: ",req.query)
 
-    } catch (error) {
-        console.log("Got error while getting employee")
-        return res.status(400).json({
-            success: false,
-            message: "Got error while getting employee => " + error
-        })
+    if (recentThree == true) {
+        try {
+            const data = await EmployeeService.getRecentThreeEmoloyees()
+            console.log("All the Employees are here.......")
+            return res.status(200).json({
+                success: true,
+                message: "Got all employee ",
+                data: data,
+                total_employee: data.length,
+
+            })
+
+        } catch (error) {
+            console.log("Got error while getting employee")
+            return res.status(400).json({
+                success: false,
+                message: "Got error while getting employee => " + error
+            })
+        }
+    } else {
+        try {
+            const data = await EmployeeService.getallemployee()
+            console.log("All the Employees are here.......")
+            return res.status(200).json({
+                success: true,
+                message: "Got all employee ",
+                data: data,
+                total_employee: data.length,
+
+            })
+
+        } catch (error) {
+            console.log("Got error while getting employee")
+            return res.status(400).json({
+                success: false,
+                message: "Got error while getting employee => " + error
+            })
+        }
     }
 }
 

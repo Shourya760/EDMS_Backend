@@ -30,6 +30,12 @@ class EmployeeService {
         );
     }
 
+    async getRecentThreeEmoloyees() {
+        return await Employee.find()
+            .sort({ createdAt: -1 })
+            .limit(3);
+    }
+
 
 }
 export default new EmployeeService();

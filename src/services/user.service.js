@@ -32,7 +32,7 @@ class UserService {
     return await User.findByIdAndUpdate(
       id,
       data,
-      { returnDocument: "after" }
+      { new: true }
     )
   }
   async getUserByToken(token) {

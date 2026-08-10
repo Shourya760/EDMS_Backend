@@ -25,7 +25,11 @@ const documentsSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
-        
+        status: {
+            type: Boolean,
+            required: false,
+            default: 0
+        },
     },
     {
         timestamps: true,
