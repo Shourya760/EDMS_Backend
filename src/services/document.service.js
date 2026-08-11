@@ -6,7 +6,7 @@ class DocumentsService {
         return await Document.create(data);
     }
     async getAllDocuments() {
-        return await Document.find();
+        return await Document.find().populate("employee_id", "name");;
     }
     async getDocumentsByEmployeeId(id) {
         return await Document.find({ employee_id: id });
@@ -18,13 +18,15 @@ class DocumentsService {
     async getByDocumnetId(document_id) {
         return await Document.findById({ _id: document_id })
     }
-    async updateDocumnetsByEmployeeId(id) {
+    async updateDocumnetsByDocumentId(id, data) {
         return await Document.findByIdAndUpdate(
             id,
             data,
-            { returnDocument: "after" }
+            { new: true }
         );
     }
+
+
 
 }
 

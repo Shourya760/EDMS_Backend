@@ -25,11 +25,22 @@ const documentsSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
-        status: {
+        verification_status: {
             type: Boolean,
             required: false,
             default: 0
         },
+        verified_by: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: false
+        },
+        verification_date: {
+            type: Date,
+            default: null,
+            required: false
+        }
+
     },
     {
         timestamps: true,

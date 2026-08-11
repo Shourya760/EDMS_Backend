@@ -18,7 +18,7 @@ export const authenticate = (req, res, next) => {
       process.env.JWT_SECRET
     );
 
-    req.user = decoded;
+    req.curr_user = decoded;
 
     next();
 

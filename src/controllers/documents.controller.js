@@ -6,6 +6,8 @@ import { getPublicIdFromUrl } from "../utills/deletingFromCloud.js";
 
 
 
+
+
 export const getalldocuments = async (req, res) => {
     try {
         console.log("Welcome ")
@@ -25,7 +27,6 @@ export const getalldocuments = async (req, res) => {
         });
     }
 }
-
 
 export const deleteDocument = async (req, res) => {
 
@@ -85,5 +86,46 @@ export const deleteDocument = async (req, res) => {
             Message: "Error while deleting Document" + error
 
         })
+    }
+}
+
+export const verifyDocument = async (req, res) => {
+    try {
+        const curr_user = req.curr_user;
+        const { document_id, verification_status } = req.body;
+
+
+        console.log("curr_user:", curr_user)
+        console.log("document_id:", document_id)
+
+
+        if (!document_id) {
+            return res.status(400).json({
+                success: false,
+                message: "document_id is required"
+            });
+        }
+
+        const data = {
+            verification_status: verification_status,
+            verified_by: curr_user.id,
+            verification_date: new Date()
+        };
+
+        // console.log("data", data);
+
+        const updating_verification = await DocumentsService.updateDocumnetsByDocumentId(document_id, data);
+
+
+        return res.status(200).json({
+            success: true,
+            message: " Verification Done",
+            data: updating_verification
+        });
+    } catch (error) {
+        return res.status(400).json({
+            success: false,
+            message: "Error in Verification" + error
+        });
     }
 }

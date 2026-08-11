@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { deleteDocument, getalldocuments, } from "../controllers/documents.controller.js";
+import { deleteDocument, getalldocuments, verifyDocument, } from "../controllers/documents.controller.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 
 
@@ -14,6 +14,8 @@ const upload = multer({
 
 
 router.delete("/deletedocument", authenticate, deleteDocument);
-router.get("/getalldocument", getalldocuments);
+router.get("/getalldocument", authenticate, getalldocuments);
+router.patch("/verifydocument", authenticate, verifyDocument)
+
 
 export default router;

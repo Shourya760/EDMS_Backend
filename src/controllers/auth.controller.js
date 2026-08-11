@@ -7,6 +7,10 @@ import { response } from "express";
 import "../../config/env.js"
 import transporter from "../utills/sendEmail.js";
 import userService from "../services/user.service.js";
+import { adminWelcome } from "../emailTamplates/adminWelcome.js";
+import { adminProfileUpdated } from "../emailTamplates/adminProfileUpdated.js";
+import { forgotPasswordEmail } from "../emailTamplates/forgotPassword.js";
+import { passwordUpdatedEmail } from "../emailTamplates/passwordUpdated.js";
 
 
 
@@ -75,23 +79,14 @@ export const registerUser = async (req, res) => {
 
     if (user) {
       try {
+        const email_info = adminWelcome(user);
+
         await transporter.sendMail({
           from: process.env.EMAIL,
           to: user.email,
-          subject: "Welcome to the Company 🎉",
-          text: `Hello ${user.name},
-          
-          Welcome to the company! We're delighted to have you onboard as a Super Admin. 
-          We look forward to having you as a part of our team.
-          You can access the platform using the link below: 
-
-          Login: ${process.env.WEBSITE_BASE}
-
-          If you have any questions or need assistance, 
-          please don't hesitate to reach out. 
-
-          Regards, 
-          HR Team`
+          subject: email_info.subject,
+          text: email_info.text,
+          html: email_info.html,
         });
       } catch (error) {
         console.log("Error in Email =>", error)
@@ -345,7 +340,7 @@ export const getUserById = async (req, res) => {
 
 export const getCurrentUserProfile = async (req, res) => {
   try {
-    const current_user = req.user;
+    const current_user = req.curr_user;
 
     const user_data = await userService.findUserById(current_user.id)
 
@@ -366,44 +361,81 @@ export const getCurrentUserProfile = async (req, res) => {
   }
 }
 
-export const UpdateUser = async (req, res) => {
+export const updateUser = async (req, res) => {
   try {
     const id = req.body.id;
     const data = JSON.parse(req.body.data);
 
-    // check if phone number is valid
+    // Check phone number
     if (data.phone) {
-      const check_phone_error = isValidIndianPhone(data.phone)
+      const check_phone_error = isValidIndianPhone(data.phone);
+
       if (!check_phone_error) {
         return res.status(409).json({
           success: false,
           message: "Invalid phone number 😑",
         });
       }
-    };
+    }
 
-    // uploading  profile to cloude
+    // Get old user before updating
+    const oldUser = await userService.findUserById(id);
+
+    if (!oldUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Upload profile image
     if (req.file) {
       const uploadedFile = await uploadToCloudinary(req.file.buffer);
       data.profile_image = uploadedFile.url;
     }
 
+
+    // Update user
     const response = await userService.updateById(id, data);
+
+    // Send email ONLY if status changed
+    if (
+      data.status !== undefined &&
+      data.status !== oldUser.status
+    ) {
+      try {
+        const email_info = adminProfileUpdated(
+          response,
+          response.status
+        );
+        await transporter.sendMail({
+          from: process.env.EMAIL,
+          to: response.email,
+          subject: email_info.subject,
+          text: email_info.text,
+          html: email_info.html,
+        });
+
+      } catch (error) {
+        console.log("Error in Email =>", error);
+      }
+    }
+
 
 
     return res.status(200).json({
       success: true,
       message: "All Done Bro",
       data: response,
-    })
+    });
 
   } catch (error) {
     return res.status(400).json({
       success: false,
-      message: "Error While Updating User =>" + error
-    })
+      message: "Error While Updating User => " + error.message,
+    });
   }
-}
+};
 
 export const forgotPassword = async (req, res) => {
   try {
@@ -434,28 +466,20 @@ export const forgotPassword = async (req, res) => {
       token_expiry: tokenExpires,
       forgot_password_token: token
     })
+
     if (set_expire_and_token) {
       try {
         console.log("Inside Email services")
+        const email_info = forgotPasswordEmail(user, token);
+
         await transporter.sendMail({
           from: process.env.EMAIL,
           to: user.email,
-          subject: "Forgot Password Email",
-          text: `Dear ${user.name},
-
-                  A request has been received to reset the password for your account.
-
-                  To reset your password, please click the link below:
-
-                  ${process.env.WEBSITE_BASE}/forgot-password?token=${token}
-
-                  If you did not request this password reset, please ignore this email. Your account will remain secure.
-
-                  Thank you,
-
-                  HR Management System
-                  Support Team`
+          subject: email_info.subject,
+          text: email_info.text,
+          html: email_info.html,
         });
+
       } catch (error) {
         console.log("Error in Email =>", error)
       }
@@ -463,8 +487,9 @@ export const forgotPassword = async (req, res) => {
     }
 
     return res.status(200).json({
-      success: false,
+      success: true,
       message: "Reset Link Shared on Your Email",
+      data: token
     })
 
 
@@ -482,7 +507,7 @@ export const updatePassword = async (req, res) => {
     const { confirmPassword, password, token } = req.body
     console.log("Debugg1111")
     /**
-     * 1. FEtch user with this token
+     * 1. Fetch user with this token
      * 2. If any user exists, then check if the token is expiered
      * 3. If no user exsits then return error
      * 4. If user exists and token is not expired, then update password
@@ -493,8 +518,6 @@ export const updatePassword = async (req, res) => {
         message: "All Fiels required"
       })
     }
-
-
 
     if (password !== confirmPassword) {
       return res.status(400).json({
@@ -516,11 +539,9 @@ export const updatePassword = async (req, res) => {
 
 
     if (!is_token_expired) {
-
-      console.log("Debug 12")
+      console.log("Stated Password Updating.....")
       const hashedPassword = await encryptPassword(password);
-
-      console.log("Debug 13")
+      console.log("Just Finishing....")
       const update_password = await UserService.updateById(
         get_user._id,
         {
@@ -529,34 +550,28 @@ export const updatePassword = async (req, res) => {
           forgot_password_token: null
         }
       )
-
-      console.log("Debug 14: ", update_password)
       try {
-        console.log("Inside Email services")
-        await transporter.sendMail({
+        console.log("📧 Starting Sending Password Updated Email...");
+
+        const email_info = passwordUpdatedEmail(get_user);
+        const info = await transporter.sendMail({
           from: process.env.EMAIL,
           to: get_user.email,
-          subject: "Password updated!",
-          text: `Hello ${get_user.name},
-
-                        Password Updated.
-
-                        LOGIN HERE: ${process.env.WEBSITE_BASE}
-
-                        Regards,
-                        HR Team`,
+          subject: email_info.subject,
+          text: email_info.text,
+          html: email_info.html,
         });
+        console.log("✅ Email sent successfully:", info.messageId);
       } catch (error) {
-        console.log("Error in Email =>", error)
+        console.error("❌ Email sending failed:", error);
       }
 
-      if (update_password) {
-        return res.status(200).json({
-          success: true,
-          message: "Password Updated"
-        })
-      }
-    } else {
+      return res.status(200).json({
+        success: true,
+        message: "Password Updated.."
+      })
+    }
+    else {
       return res.status(400).json({
         success: false,
         message: "Token Expired "
