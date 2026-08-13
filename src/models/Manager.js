@@ -20,4 +20,6 @@ const managerSchema = new mongoose.Schema(
 )
 
 const Manager = mongoose.model("Manager", managerSchema);
+
+
 export default Manager;

@@ -7,10 +7,12 @@ import { response } from "express";
 import "../../config/env.js"
 import transporter from "../utills/sendEmail.js";
 import userService from "../services/user.service.js";
-import { adminWelcome } from "../emailTamplates/adminWelcome.js";
-import { adminProfileUpdated } from "../emailTamplates/adminProfileUpdated.js";
-import { forgotPasswordEmail } from "../emailTamplates/forgotPassword.js";
-import { passwordUpdatedEmail } from "../emailTamplates/passwordUpdated.js";
+import {
+  welcomeEmail,
+  accountStatusEmail,
+  forgotPasswordEmail,
+  passwordUpdatedEmail,
+} from "../emailTamplates/authMails.js";
 
 
 
@@ -79,7 +81,7 @@ export const registerUser = async (req, res) => {
 
     if (user) {
       try {
-        const email_info = adminWelcome(user);
+        const email_info = welcomeEmail(user);
 
         await transporter.sendMail({
           from: process.env.EMAIL,
@@ -404,7 +406,7 @@ export const updateUser = async (req, res) => {
       data.status !== oldUser.status
     ) {
       try {
-        const email_info = adminProfileUpdated(
+        const email_info = accountStatusEmail(
           response,
           response.status
         );

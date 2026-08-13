@@ -4,7 +4,7 @@ import { DocumentsService } from "../services/index.js";
 import cloudinary from "../../config/cloudinary.js";
 import { getPublicIdFromUrl } from "../utills/deletingFromCloud.js";
 
-
+import { allDocumentsVerifiedEmail } from "../emailTamplates/documentMails.js";
 
 
 
@@ -116,6 +116,40 @@ export const verifyDocument = async (req, res) => {
 
         const updating_verification = await DocumentsService.updateDocumnetsByDocumentId(document_id, data);
 
+        // Sending mail if all the documents are verified
+
+        const employeeId = updating_verification.employee_id;
+
+        const documents =
+            await DocumentsService.getDocumentsByEmployeeId(employeeId);
+
+        const allVerified = documents.every(
+            (doc) => doc.verification_status === "verified"
+        );
+
+
+
+        // Mail service
+        if (allDocumentsVerified) {
+            try {
+                const emailInfo = allDocumentsVerifiedEmail(employee);
+
+                await transporter.sendMail({
+                    from: process.env.EMAIL,
+                    to: employee.email,
+                    subject: emailInfo.subject,
+                    text: emailInfo.text,
+                    html: emailInfo.html,
+                });
+
+                console.log("✅ All documents verified email sent");
+            } catch (error) {
+                console.error("❌ Document verification email failed:", error);
+            }
+        }
+
+
+        // All done
 
         return res.status(200).json({
             success: true,

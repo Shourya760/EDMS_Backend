@@ -10,11 +10,14 @@ class ManagerService {
             .populate("department_id")
             .populate("employee_id");  //fixx this first.................................
     }
-    async findByManagerId(employee_id) {
-        return await Manager.findOne({ employee_id });
+    async findByManagerId(_id) {
+        return await Manager.findById({ _id });
     }
     async findByDepartmentId(department_id) {
         return await Manager.findOne({ department_id })
+    }
+    async removeByManagerId(id) {
+        return await Manager.findByIdAndDelete(id)
     }
     async removeByEmployeeId(employee_id) {
         return await Manager.findOneAndDelete({ employee_id })

@@ -1,9 +1,13 @@
 import { isValidIndianPhone } from "../utills/validations.js";
 import { DepartmentService, DocumentsService, EmployeeService, ManagerService } from "../services/index.js";
 import { uploadToCloudinary } from "../utills/uploadToCloudinary.js";
-
-
 import transporter from "../utills/sendEmail.js";
+
+
+import {
+    employeeWelcomeEmail,
+    employeeDeletedEmail,
+} from "../emailTamplates/employeeMails.js";
 
 
 export const createEmployee = async (req, res) => {
@@ -99,36 +103,39 @@ export const createEmployee = async (req, res) => {
 
         if (document && employee) {
             try {
-                console.log("Inside Email services")
+                const emailInfo = employeeWelcomeEmail(employee);
+
                 await transporter.sendMail({
                     from: process.env.EMAIL,
                     to: employee.email,
-                    subject: "Welcome to the Company 🎉",
-                    text: `Hello ${employee.name},
-
-                        Welcome to the company!
-
-                        We're happy to have you onboard.
-
-                        Regards,
-                        HR Team`,
+                    subject: emailInfo.subject,
+                    text: emailInfo.text,
+                    html: emailInfo.html,
                 });
+
             } catch (error) {
-                console.log("Error in Email =>", error)
+                console.error("Error sending welcome email:", error);
             }
 
+            // All done
+            return res.status(200).json({
+                success: true,
+                message: "Employeee registered successfully",
+                data: {
+                    id: employee._id,
+                    name: employee.name,
+                    email: employee.email,
+                },
+            });
+        } else {
+            return res.status(400).json({
+                success: true,
+                message: "Error in sending mail..",
+            });
         }
 
-        // All done
-        return res.status(200).json({
-            success: true,
-            message: "Employeee registered successfully",
-            data: {
-                id: employee._id,
-                name: employee.name,
-                email: employee.email,
-            },
-        });
+
+
     } catch (error) {
         console.log("Error while creating employee => ", error)
         return res.status(500).json({
@@ -141,7 +148,7 @@ export const createEmployee = async (req, res) => {
 export const getAllEmployee = async (req, res) => {
     const { recentThree } = req.query;
 
-    console.log("Debug 11: ",req.query)
+    console.log("Debug 11: ", req.query)
 
     if (recentThree == true) {
         try {
@@ -268,6 +275,24 @@ export const deleteEmployee = async (req, res) => {
             }
         );
 
+
+
+        try {
+            const emailInfo = employeeDeletedEmail(employee);
+
+            await transporter.sendMail({
+                from: process.env.EMAIL,
+                to: employee.email,
+                subject: emailInfo.subject,
+                text: emailInfo.text,
+                html: emailInfo.html,
+            });
+
+        } catch (error) {
+            console.error("Error sending employee deletion email:", error);
+        }
+        
+        // All done
         return res.status(200).json({
             success: true,
             message: "Employee deleted successfully.",
