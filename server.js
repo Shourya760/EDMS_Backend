@@ -7,8 +7,6 @@ import express from "express";
 import connectDB from "./config/db.js";
 import registerRoutes from "./src/routes/index.js";
 
-
-
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());

@@ -146,50 +146,52 @@ export const createEmployee = async (req, res) => {
 }
 
 export const getAllEmployee = async (req, res) => {
-    const { recentThree } = req.query;
+    const { recentThree, is_manager } = req.query;
 
-    console.log("Debug 11: ", req.query)
+    try {
+        if (recentThree === "true") {
+            const data = await EmployeeService.getRecentThreeEmoloyees();
 
-    if (recentThree == true) {
-        try {
-            const data = await EmployeeService.getRecentThreeEmoloyees()
-            console.log("All the Employees are here.......")
             return res.status(200).json({
                 success: true,
-                message: "Got all employee ",
-                data: data,
+                message: "Got recent three employees",
+                data,
                 total_employee: data.length,
-
-            })
-
-        } catch (error) {
-            console.log("Got error while getting employee")
-            return res.status(400).json({
-                success: false,
-                message: "Got error while getting employee => " + error
-            })
+            });
         }
-    } else {
-        try {
-            const data = await EmployeeService.getallemployee()
-            console.log("All the Employees are here.......")
-            return res.status(200).json({
-                success: true,
-                message: "Got all employee ",
-                data: data,
-                total_employee: data.length,
+        const allEmployees = await EmployeeService.getallemployee();
+        let data = allEmployees;
 
-            })
+        if (is_manager === "false") {
+            data = allEmployees.filter(
+                employee => employee.is_manager === false
+            );
 
-        } catch (error) {
-            console.log("Got error while getting employee")
-            return res.status(400).json({
-                success: false,
-                message: "Got error while getting employee => " + error
-            })
+        } else if (is_manager === "true") {
+            data = allEmployees.filter(
+                employee => employee.is_manager === true
+            );
         }
+
+        return res.status(200).json({
+            success: true,
+            message: "Got all employees",
+            total_employee: data.length,
+            data: data,
+
+        });
+
+    } catch (error) {
+        console.log("Got error while getting employee", error);
+
+        return res.status(400).json({
+            success: false,
+            message: "Got error while getting employee",
+            error: error.message,
+        });
     }
-}
+};
+
 
 export const getOneEmployee = async (req, res) => {
     try {
@@ -291,7 +293,7 @@ export const deleteEmployee = async (req, res) => {
         } catch (error) {
             console.error("Error sending employee deletion email:", error);
         }
-        
+
         // All done
         return res.status(200).json({
             success: true,

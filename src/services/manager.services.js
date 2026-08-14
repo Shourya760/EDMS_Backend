@@ -8,7 +8,7 @@ class ManagerService {
     async getAllManagers() {
         return await Manager.find()
             .populate("department_id")
-            .populate("employee_id");  //fixx this first.................................
+            .populate("employee_id"); 
     }
     async findByManagerId(_id) {
         return await Manager.findById({ _id });
