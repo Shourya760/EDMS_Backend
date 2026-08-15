@@ -63,12 +63,12 @@ HR Team`,
 // 2. Account Status Updated Email
 export const accountStatusEmail = (user, status) => ({
     subject:
-        status === "active"
+        status === true || status === "active"
             ? "Your Account Has Been Activated"
             : "Your Account Has Been Deactivated",
 
     text:
-        status === "active"
+        status === true || status === "active"
             ? `Hello ${user.name},
 
 Your account has been activated successfully.
@@ -89,7 +89,7 @@ Regards,
 HR Team`,
 
     html: emailLayout(
-        status === "active"
+        status === true || status === "active"
             ? `
         <h2 style="margin-top:0; color:#1e293b;">
           Account Activated ✅
@@ -157,7 +157,8 @@ HR Team`,
 
 // 3. Forgot Password Email
 export const forgotPasswordEmail = (user, token) => {
-    const resetUrl = `${process.env.WEBSITE_BASE}/forgot-password?token=${token}`;
+    const baseUrl = (process.env.WEBSITE_BASE || "http://localhost:5173").replace(/\/$/, "");
+    const resetUrl = `${baseUrl}/forgot-password?token=${encodeURIComponent(token)}`;
 
     return {
         subject: "Reset Your Password",

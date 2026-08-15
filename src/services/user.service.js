@@ -10,7 +10,8 @@ class UserService {
   }
 
   async getAllUsers() {
-    return await User.find();
+    return await User.find()
+    .select("-password -forgot_password_token -token_expiry");
   }
 
   async deleteUserByEmail(email) {

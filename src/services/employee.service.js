@@ -17,21 +17,18 @@ class EmployeeService {
         });
     }
     async getemployeebyid(id) {
-        return await Employee.findById({
-            _id: id,
-            is_deleted: false
-        });
+        return await Employee.findOne({ _id: id, is_deleted: false });
     }
     async updateEmployee(id, data) {
         return await Employee.findByIdAndUpdate(
             id,
             data,
-            { returnDocument: "after" }
+            { new: true }
         );
     }
 
     async getRecentThreeEmoloyees() {
-        return await Employee.find()
+        return await Employee.find({ is_deleted: false })
             .sort({ createdAt: -1 })
             .limit(3);
     }

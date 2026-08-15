@@ -9,7 +9,7 @@ const router = express.Router()
 
 router.post("/addmanager", authenticate, createManager);
 router.get("/getmanagers", authenticate, getAllManager);
-router.delete("/removemanager",removeManager);
+router.delete("/removemanager", authenticate, removeManager);
 
 
 export default router;

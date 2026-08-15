@@ -11,15 +11,13 @@ class DepartmentService {
             .populate("department_manager_id");
     }
     async getDepartmentById(id) {
-        return await Department.findById({
-            _id: id
-        });
+        return await Department.findById(id);
     }
     async updateDepartment(id, data) {
         return await Department.findByIdAndUpdate(
             id,
             data,
-            { returnDocument: "after" }
+            { new: true }
         );
     }
 

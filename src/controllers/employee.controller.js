@@ -1,7 +1,7 @@
 import { isValidIndianPhone } from "../utills/validations.js";
 import { DepartmentService, DocumentsService, EmployeeService, ManagerService } from "../services/index.js";
 import { uploadToCloudinary } from "../utills/uploadToCloudinary.js";
-import transporter from "../utills/sendEmail.js";
+import { sendEmail } from "../utills/sendEmail.js";
 
 
 import {
@@ -75,11 +75,14 @@ export const createEmployee = async (req, res) => {
             ? JSON.parse(documentTypes)
             : [];
 
-        const uploadedDocuments = req.files.documents || [];
+        const uploadedDocuments = req.files?.documents || [];
         const employeeDocuments = await Promise.all(
 
             uploadedDocuments.map(async (file, index) => {
 
+                if (!parsedDocumentTypes[index]?.type) {
+                    throw new Error("Each uploaded document needs a document type");
+                }
                 const fileName = `${parsedDocumentTypes[index].type}_${employee.email}`
                     .replace(/\s+/g, "_");
 
@@ -105,8 +108,7 @@ export const createEmployee = async (req, res) => {
             try {
                 const emailInfo = employeeWelcomeEmail(employee);
 
-                await transporter.sendMail({
-                    from: process.env.EMAIL,
+                await sendEmail({
                     to: employee.email,
                     subject: emailInfo.subject,
                     text: emailInfo.text,
@@ -254,7 +256,7 @@ export const deleteEmployee = async (req, res) => {
             });
         }
         //Removing manager_id from department and removing manager record if exist 
-        const manager = await ManagerService.findByManagerId(employee_id);
+        const manager = await ManagerService.findByEmployeeId(employee_id);
         if (manager) {
             await DepartmentService.updateDepartment(
                 manager.department_id,
@@ -282,8 +284,7 @@ export const deleteEmployee = async (req, res) => {
         try {
             const emailInfo = employeeDeletedEmail(employee);
 
-            await transporter.sendMail({
-                from: process.env.EMAIL,
+            await sendEmail({
                 to: employee.email,
                 subject: emailInfo.subject,
                 text: emailInfo.text,

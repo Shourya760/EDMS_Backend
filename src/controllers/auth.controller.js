@@ -3,9 +3,9 @@ import { isValidIndianPhone } from "../utills/validations.js";
 import { uploadToCloudinary } from "../utills/uploadToCloudinary.js";
 import { comparePassword, encryptPassword } from "../utills/password.util.js";
 import { generatePasswordToken, generateToken } from "../utills/jwt.js";
-import { response } from "express";
+import { createHash } from "crypto";
 import "../../config/env.js"
-import transporter from "../utills/sendEmail.js";
+import { sendEmail } from "../utills/sendEmail.js";
 import userService from "../services/user.service.js";
 import {
   welcomeEmail,
@@ -14,15 +14,18 @@ import {
   passwordUpdatedEmail,
 } from "../emailTamplates/authMails.js";
 
+const safeUser = (user) => {
+  const data = user?.toObject ? user.toObject() : user;
+  if (!data) return data;
+  const { password, forgot_password_token, token_expiry, ...publicUser } = data;
+  return publicUser;
+};
 
 
 
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password, confirmpassword, phone, address } = req.body;
-
-    console.log("Data: ", req.body)
-    console.log("FILE TYPE OF REQ.FILE: ", req.file)
 
     if (!name || !email || !password || !confirmpassword || !phone || !address) {
       return res.status(400).json({
@@ -31,7 +34,6 @@ export const registerUser = async (req, res) => {
       });
 
     }
-    console.log("debugger1")
     const check_phone_error = isValidIndianPhone(phone)
     if (!check_phone_error) {
       return res.status(409).json({
@@ -39,7 +41,6 @@ export const registerUser = async (req, res) => {
         message: "Invalid phone number 😑",
       });
     }
-    console.log("debugger2")
 
     const existingUser = await UserService.findByEmail(email);
 
@@ -83,8 +84,7 @@ export const registerUser = async (req, res) => {
       try {
         const email_info = welcomeEmail(user);
 
-        await transporter.sendMail({
-          from: process.env.EMAIL,
+        await sendEmail({
           to: user.email,
           subject: email_info.subject,
           text: email_info.text,
@@ -111,7 +111,7 @@ export const registerUser = async (req, res) => {
     console.error(error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error in register user api" + error,
+      message: "Internal server error in register user API",
     });
   }
 };
@@ -149,10 +149,10 @@ export const deleteUserByEmail = async (req, res) => {
       });
     }
 
-    const user_deleted = userService.deleteUserByEmail(email);
+    const user_deleted = await userService.deleteUserByEmail(email);
 
     if (user_deleted) {
-      return res.status(210).json({
+      return res.status(200).json({
         success: true,
         message: "User deleted ",
       });
@@ -179,7 +179,6 @@ export const loginUser = async (req, res) => {
     // step1 : fetch email and password.
     const { email, password } = req.body
 
-    console.log("debbbug 1");
     // step2 : check both email and password.
     if (!email || !password) {
       return res.status(400).json(
@@ -189,7 +188,6 @@ export const loginUser = async (req, res) => {
         }
       )
     }
-    console.log("debbbug 2");
     // step3 : check if email exist in db.
     // step3.1 : if email don't exist returns error.
     const email_check = await userService.findByEmail(email);
@@ -203,27 +201,13 @@ export const loginUser = async (req, res) => {
       )
     }
 
-    console.log("debbbug 3");
-
-    console.log(password);
-    console.log(email_check.password);
-
-
     const is_password_correct = await comparePassword(password, email_check.password)
     // aditya@gmail.com , 123456
     // step4 : check if password is correct fro the given email.
     // const check_email_password = await userService.findByEmailAndPassword(email, password);
 
-    // Generate JWT
-    const token = generateToken({
-      id: email_check._id,
-      email: email_check.email,
-      name: email_check.name
-    });
-
-    console.log("debbbug 4");
     if (!is_password_correct) {
-      return res.status(403).json(
+      return res.status(401).json(
         {
           status: false,
           message: "EMAIL OR PASSWORD IS INCORRECT"
@@ -231,6 +215,11 @@ export const loginUser = async (req, res) => {
       )
     }
     else {
+      const token = generateToken({
+        id: email_check._id,
+        email: email_check.email,
+        name: email_check.name
+      });
       return res.status(200).json({
         status: true,
         message: "LOGIN SUCCESSFUL",
@@ -249,7 +238,7 @@ export const loginUser = async (req, res) => {
 
   }
   catch (error) {
-    return res.status(450).json(
+    return res.status(500).json(
       {
         status: false,
         message: "Some thing wrong in email or password => " + error
@@ -278,13 +267,13 @@ export const getUser = async (req, res) => {
         {
           status: true,
           message: "USER INFO RECEIVED",
-          data: email_check
+          data: safeUser(email_check)
         }
       )
     }
   }
   catch (error) {
-    return res.status(450).json(
+    return res.status(500).json(
       {
         status: false,
         message: "USER NOT AVAILABLE WITH THIS EMAIL & PASSWORD => " + error
@@ -303,26 +292,29 @@ export const getUserById = async (req, res) => {
     if (userId) {
       const get_user = await userService.findUserById(userId);
 
+      if (!get_user) return res.status(404).json({ success: false, message: "User not found" });
       return res.status(200).json({
         success: true,
         message: "User Data Fatched",
-        data: get_user
+        data: safeUser(get_user)
       })
     } else if (user_email) {
       const email_check = await userService.findByEmail(user_email);
 
+      if (!email_check) return res.status(404).json({ success: false, message: "User not found" });
       return res.status(200).json({
         success: true,
         message: "User Data Fatched",
-        data: email_check
+        data: safeUser(email_check)
       })
     } else if (phone) {
       const email_check = await userService.findByPhone(phone);
 
+      if (!email_check) return res.status(404).json({ success: false, message: "User not found" });
       return res.status(200).json({
         success: true,
         message: "User Data Fatched",
-        data: email_check
+        data: safeUser(email_check)
       })
     }
 
@@ -346,10 +338,14 @@ export const getCurrentUserProfile = async (req, res) => {
 
     const user_data = await userService.findUserById(current_user.id)
 
+    if (!user_data) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
     return res.status(200).json({
       success: true,
       message: " Got the user",
-      data: user_data
+      data: safeUser(user_data)
     })
 
 
@@ -366,7 +362,16 @@ export const getCurrentUserProfile = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const id = req.body.id;
-    const data = JSON.parse(req.body.data);
+    const requestedData = JSON.parse(req.body.data);
+
+    const data = {};
+    for (const field of ["name", "phone", "address"]) {
+      if (requestedData[field] !== undefined) data[field] = requestedData[field];
+    }
+
+    if (!id || id !== req.curr_user.id) {
+      return res.status(403).json({ success: false, message: "You can only update your own profile" });
+    }
 
     // Check phone number
     if (data.phone) {
@@ -400,35 +405,10 @@ export const updateUser = async (req, res) => {
     // Update user
     const response = await userService.updateById(id, data);
 
-    // Send email ONLY if status changed
-    if (
-      data.status !== undefined &&
-      data.status !== oldUser.status
-    ) {
-      try {
-        const email_info = accountStatusEmail(
-          response,
-          response.status
-        );
-        await transporter.sendMail({
-          from: process.env.EMAIL,
-          to: response.email,
-          subject: email_info.subject,
-          text: email_info.text,
-          html: email_info.html,
-        });
-
-      } catch (error) {
-        console.log("Error in Email =>", error);
-      }
-    }
-
-
-
     return res.status(200).json({
       success: true,
       message: "All Done Bro",
-      data: response,
+      data: safeUser(response),
     });
 
   } catch (error) {
@@ -436,6 +416,47 @@ export const updateUser = async (req, res) => {
       success: false,
       message: "Error While Updating User => " + error.message,
     });
+  }
+};
+
+export const updateUserStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { status } = req.body;
+
+    if (typeof status !== "boolean") {
+      return res.status(400).json({ success: false, message: "Status must be true or false" });
+    }
+    if (String(req.curr_user.id) === userId && status === false) {
+      return res.status(400).json({ success: false, message: "You cannot deactivate your own account" });
+    }
+
+    const user = await userService.findUserById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Admin not found" });
+    }
+
+    const updatedUser = await userService.updateById(userId, { status });
+
+    try {
+      const emailInfo = accountStatusEmail(updatedUser, status);
+      await sendEmail({
+        to: updatedUser.email,
+        subject: emailInfo.subject,
+        text: emailInfo.text,
+        html: emailInfo.html,
+      });
+    } catch (emailError) {
+      console.error("Could not send account-status email:", emailError.message);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Admin account ${status ? "activated" : "deactivated"}`,
+      data: safeUser(updatedUser),
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Could not update admin status" });
   }
 };
 
@@ -453,29 +474,25 @@ export const forgotPassword = async (req, res) => {
     const user = await UserService.findByEmail(email)
 
     if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "Email doesn't Exist"
-      })
+      return res.status(200).json({ success: true, message: "If the email exists, a reset link has been sent" });
     }
 
     const token = generatePasswordToken();
+    const tokenHash = createHash("sha256").update(token).digest("hex");
 
     // Expires after 24 hours
     const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const set_expire_and_token = await UserService.updateById(user._id, {
       token_expiry: tokenExpires,
-      forgot_password_token: token
+      forgot_password_token: tokenHash
     })
 
     if (set_expire_and_token) {
       try {
-        console.log("Inside Email services")
         const email_info = forgotPasswordEmail(user, token);
 
-        await transporter.sendMail({
-          from: process.env.EMAIL,
+        await sendEmail({
           to: user.email,
           subject: email_info.subject,
           text: email_info.text,
@@ -490,8 +507,7 @@ export const forgotPassword = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Reset Link Shared on Your Email",
-      data: token
+      message: "If the email exists, a reset link has been sent"
     })
 
 
@@ -507,7 +523,6 @@ export const updatePassword = async (req, res) => {
   try {
 
     const { confirmPassword, password, token } = req.body
-    console.log("Debugg1111")
     /**
      * 1. Fetch user with this token
      * 2. If any user exists, then check if the token is expiered
@@ -528,7 +543,8 @@ export const updatePassword = async (req, res) => {
       })
     }
 
-    const get_user = await UserService.getUserByToken(token)
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+    const get_user = await UserService.getUserByToken(tokenHash)
 
     if (!get_user) {
       return res.status(400).json({
@@ -541,10 +557,8 @@ export const updatePassword = async (req, res) => {
 
 
     if (!is_token_expired) {
-      console.log("Stated Password Updating.....")
       const hashedPassword = await encryptPassword(password);
-      console.log("Just Finishing....")
-      const update_password = await UserService.updateById(
+      await UserService.updateById(
         get_user._id,
         {
           password: hashedPassword,
@@ -553,17 +567,13 @@ export const updatePassword = async (req, res) => {
         }
       )
       try {
-        console.log("📧 Starting Sending Password Updated Email...");
-
         const email_info = passwordUpdatedEmail(get_user);
-        const info = await transporter.sendMail({
-          from: process.env.EMAIL,
+        await sendEmail({
           to: get_user.email,
           subject: email_info.subject,
           text: email_info.text,
           html: email_info.html,
         });
-        console.log("✅ Email sent successfully:", info.messageId);
       } catch (error) {
         console.error("❌ Email sending failed:", error);
       }
@@ -588,6 +598,3 @@ export const updatePassword = async (req, res) => {
     })
   }
 }
-
-
-

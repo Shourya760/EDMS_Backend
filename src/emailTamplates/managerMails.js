@@ -29,7 +29,7 @@ export const managerAssignedEmail = (employee, department) => ({
 
     <p>
       You have been assigned as the manager of the
-      <strong>${department.name}</strong> department.
+      <strong>${department.department_name}</strong> department.
     </p>
 
     <div style="
@@ -41,7 +41,7 @@ export const managerAssignedEmail = (employee, department) => ({
       text-align:center;
     ">
       <strong style="color:#1d4ed8;">
-        👔 ${department.name} Manager
+        👔 ${department.department_name} Manager
       </strong>
     </div>
 

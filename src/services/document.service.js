@@ -12,11 +12,11 @@ class DocumentsService {
         return await Document.find({ employee_id: id });
     }
     async deleteByDocumnentId(document_id) {
-        return await Document.findByIdAndDelete({ _id: document_id })
+        return await Document.findByIdAndDelete(document_id)
     }
 
     async getByDocumnetId(document_id) {
-        return await Document.findById({ _id: document_id })
+        return await Document.findById(document_id)
     }
     async updateDocumnetsByDocumentId(id, data) {
         return await Document.findByIdAndUpdate(

@@ -1,8 +1,9 @@
 
 import mongoose from "mongoose";
-import { DocumentsService } from "../services/index.js";
+import { DocumentsService, EmployeeService } from "../services/index.js";
 import cloudinary from "../../config/cloudinary.js";
 import { getPublicIdFromUrl } from "../utills/deletingFromCloud.js";
+import { sendEmail } from "../utills/sendEmail.js";
 
 import { allDocumentsVerifiedEmail } from "../emailTamplates/documentMails.js";
 
@@ -13,7 +14,7 @@ export const getalldocuments = async (req, res) => {
         console.log("Welcome ")
         const document = await DocumentsService.getAllDocuments();
 
-        return res.status(201).json({
+        return res.status(200).json({
             success: true,
             message: "Got all documents",
             length: document.length,
@@ -105,6 +106,9 @@ export const verifyDocument = async (req, res) => {
                 message: "document_id is required"
             });
         }
+        if (!mongoose.Types.ObjectId.isValid(document_id) || typeof verification_status !== "boolean") {
+            return res.status(400).json({ success: false, message: "A valid document ID and boolean verification status are required" });
+        }
 
         const data = {
             verification_status: verification_status,
@@ -115,6 +119,9 @@ export const verifyDocument = async (req, res) => {
         // console.log("data", data);
 
         const updating_verification = await DocumentsService.updateDocumnetsByDocumentId(document_id, data);
+        if (!updating_verification) {
+            return res.status(404).json({ success: false, message: "Document not found" });
+        }
 
         // Sending mail if all the documents are verified
 
@@ -124,18 +131,21 @@ export const verifyDocument = async (req, res) => {
             await DocumentsService.getDocumentsByEmployeeId(employeeId);
 
         const allVerified = documents.every(
-            (doc) => doc.verification_status === "verified"
+            (doc) => doc.verification_status === true
         );
 
 
 
         // Mail service
-        if (allDocumentsVerified) {
+        if (allVerified) {
             try {
+                const employee = await EmployeeService.getemployeebyid(employeeId);
+                if (!employee?.email) {
+                    throw new Error("Employee not found");
+                }
                 const emailInfo = allDocumentsVerifiedEmail(employee);
 
-                await transporter.sendMail({
-                    from: process.env.EMAIL,
+                await sendEmail({
                     to: employee.email,
                     subject: emailInfo.subject,
                     text: emailInfo.text,

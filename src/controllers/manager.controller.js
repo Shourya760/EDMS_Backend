@@ -1,6 +1,6 @@
 import { ManagerService, EmployeeService, DepartmentService } from "../services/index.js";
 import { managerAssignedEmail } from "../emailTamplates/managerMails.js";
-import transporter from "../utills/sendEmail.js";
+import { sendEmail } from "../utills/sendEmail.js";
 
 
 
@@ -15,9 +15,20 @@ export const createManager = async (req, res) => {
             });
         }
 
+        const [department, employee] = await Promise.all([
+            DepartmentService.getDepartmentById(department_id),
+            EmployeeService.getemployeebyid(employee_id),
+        ]);
+        if (!department || !employee) {
+            return res.status(404).json({
+                success: false,
+                message: "Department or active employee not found.",
+            });
+        }
+
         // Check if employee is already a manager
         const existingManager =
-            await ManagerService.findByManagerId(employee_id);
+            await ManagerService.findByEmployeeId(employee_id);
 
         if (existingManager) {
             return res.status(400).json({
@@ -55,20 +66,19 @@ export const createManager = async (req, res) => {
 
         // Send manager assignment email
         try {
-            const employee =
+            const assignedEmployee =
                 await EmployeeService.getemployeebyid(employee_id);
 
-            const department =
+            const assignedDepartment =
                 await DepartmentService.getDepartmentById(department_id);
             
-            if (employee?.email) {
+            if (assignedEmployee?.email) {
                 const emailInfo = managerAssignedEmail(
-                    employee,
-                    department
+                    assignedEmployee,
+                    assignedDepartment
                 );
-                await transporter.sendMail({
-                    from: process.env.EMAIL,
-                    to: employee.email,
+                await sendEmail({
+                    to: assignedEmployee.email,
                     subject: emailInfo.subject,
                     text: emailInfo.text,
                     html: emailInfo.html,
@@ -145,7 +155,7 @@ export const removeManager = async (req, res) => {
 
         const employee_id = manager.employee_id;
 
-        await DepartmentService.updateDepartment(employee_id, {
+        await DepartmentService.updateDepartment(manager.department_id, {
             department_manager_id: null
         })
         await EmployeeService.updateEmployee(employee_id, {
