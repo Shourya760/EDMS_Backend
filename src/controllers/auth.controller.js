@@ -12,6 +12,7 @@ import {
   accountStatusEmail,
   forgotPasswordEmail,
   passwordUpdatedEmail,
+  informationUpdatedEmail,
 } from "../emailTamplates/authMails.js";
 
 const safeUser = (user) => {
@@ -365,12 +366,18 @@ export const updateUser = async (req, res) => {
     const requestedData = JSON.parse(req.body.data);
 
     const data = {};
+
     for (const field of ["name", "phone", "address"]) {
-      if (requestedData[field] !== undefined) data[field] = requestedData[field];
+      if (requestedData[field] !== undefined) {
+        data[field] = requestedData[field];
+      }
     }
 
     if (!id || id !== req.curr_user.id) {
-      return res.status(403).json({ success: false, message: "You can only update your own profile" });
+      return res.status(403).json({
+        success: false,
+        message: "You can only update your own profile",
+      });
     }
 
     // Check phone number
@@ -401,15 +408,32 @@ export const updateUser = async (req, res) => {
       data.profile_image = uploadedFile.url;
     }
 
-
     // Update user
     const response = await userService.updateById(id, data);
+
+    // Send information updated email
+    try {
+      const emailInfo = informationUpdatedEmail(response);
+
+      await sendEmail({
+        to: response.email,
+        subject: emailInfo.subject,
+        text: emailInfo.text,
+        html: emailInfo.html,
+      });
+    } catch (emailError) {
+      console.error(
+        "Could not send information-updated email:",
+        emailError.message
+      );
+    }
 
     return res.status(200).json({
       success: true,
       message: "All Done Bro",
       data: safeUser(response),
     });
+
 
   } catch (error) {
     return res.status(400).json({
