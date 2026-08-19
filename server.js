@@ -20,6 +20,14 @@ app.use(cors(
   }));
 connectDB();
 
+// for testing 
+app.get("/api/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "Server test works"
+  });
+});
+
 app.get("/", (req, res) => {
   res.send("EDMS API Running");
 });

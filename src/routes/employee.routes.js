@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { authenticate } from "../middleware/authMiddleware.js";
-import { createEmployee, deleteEmployee, getAllEmployee, getOneEmployee, updateEmployee } from "../controllers/employee.controller.js";
+import { createEmployee, createmanyemployee, deleteEmployee, getAllEmployee, getOneEmployee, updateEmployee } from "../controllers/employee.controller.js";
 
 
 
@@ -44,6 +44,13 @@ router.patch("/updateemployee", authenticate, upload.fields([
     maxCount: 20
   }
 ]), updateEmployee);
+
+
+// Upload ExcelSheet
+router.post("/createmanyemployee", upload.single("file"), createmanyemployee)
+
+
+
 
 
 export default router;

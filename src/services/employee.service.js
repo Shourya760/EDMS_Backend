@@ -6,10 +6,9 @@ class EmployeeService {
         return await Employee.create(data);
     }
     async findbyemail(email) {
-        return await Employee.findOne({
-            email,
-            is_deleted: false
-        });
+        // Email has a database-level unique index, so soft-deleted employees
+        // must also be considered during duplicate checks.
+        return await Employee.findOne({ email });
     }
     async getallemployee() {
         return await Employee.find({
@@ -33,6 +32,10 @@ class EmployeeService {
             .limit(3);
     }
 
+
+    async createManyEmployees(employees) {
+        return await Employee.insertMany(employees);
+    };
 
 }
 export default new EmployeeService();

@@ -20,7 +20,6 @@ import {
 const upload = multer({
   storage: multer.memoryStorage(),
 });
-
 const router = express.Router();
 
 // Unprotected Routes
@@ -38,7 +37,6 @@ router.get("/profile", authenticate, getCurrentUserProfile)
 
 router.patch("/updateUser", authenticate, upload.single("profile_image"), updateUser)
 router.patch("/users/:userId/status", authenticate, updateUserStatus)
-
 
 
 export default router;

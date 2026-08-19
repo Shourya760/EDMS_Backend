@@ -2,12 +2,9 @@ import { isValidIndianPhone } from "../utills/validations.js";
 import { DepartmentService, DocumentsService, EmployeeService, ManagerService } from "../services/index.js";
 import { uploadToCloudinary } from "../utills/uploadToCloudinary.js";
 import { sendEmail } from "../utills/sendEmail.js";
-
-
-import {
-    employeeWelcomeEmail,
-    employeeDeletedEmail,
-} from "../emailTamplates/employeeMails.js";
+import { employeeWelcomeEmail, employeeDeletedEmail, } from "../emailTamplates/employeeMails.js";
+import { importEmployees } from "../utills/importEmployees.js";
+import { validateEmployees } from "../utills/validateEmployees.js";
 
 
 export const createEmployee = async (req, res) => {
@@ -193,7 +190,6 @@ export const getAllEmployee = async (req, res) => {
         });
     }
 };
-
 
 export const getOneEmployee = async (req, res) => {
     try {
@@ -392,3 +388,53 @@ export const updateEmployee = async (req, res) => {
         });
     }
 };
+
+export const createmanyemployee = async (req, res) => {
+    try {
+
+        const file = req.file;
+        // console.log(file);
+
+        if (!file) {
+            return res.status(400).json({
+                success: false,
+                message: "Please upload an Excel or CSV file",
+            });
+        }
+        // Extrect JSON
+        const result = await importEmployees(file);
+        console.log("Emplyees data are  : ", result);
+
+
+
+
+        // Validate JSON
+        const validation = await validateEmployees(result);
+        if (!validation.valid) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid employee data",
+                errors: validation.errors
+            });
+        }
+
+
+        const empoyees = await EmployeeService.createManyEmployees(result);
+
+
+        return res.status(200).json({
+            success: true,
+            message: "Employees imported successfully",
+            length: empoyees.length,
+            data: empoyees,
+        });
+
+
+    } catch (error) {
+        console.log("Update Employee Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error while inserting data=>" + error
+        });
+    }
+}

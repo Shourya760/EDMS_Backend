@@ -105,9 +105,6 @@ export const registerUser = async (req, res) => {
       });
     }
 
-
-
-
   } catch (error) {
     console.error(error);
     return res.status(500).json({
@@ -120,6 +117,8 @@ export const registerUser = async (req, res) => {
 export const getAllUsers = async (req, res) => {
   try {
     const users = await UserService.getAllUsers();
+    
+    console.log("Deeeeebug  API getting all users");
 
     return res.status(200).json({
       success: true,
