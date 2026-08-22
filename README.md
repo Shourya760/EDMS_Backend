@@ -218,7 +218,7 @@ npm run dev
 
 ## Author
 
-Your Name
+Shourya Verma
 
 ---
 
